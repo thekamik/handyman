@@ -1,2 +1,3 @@
 # handyman
-esp32 tool
+
+Projekt do nauki Rusta poprzez eksplorowanie protokołów sieciowych.
