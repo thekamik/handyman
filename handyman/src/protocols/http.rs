@@ -1,4 +1,14 @@
 //! HTTP/1.x decoder: splits each direction into requests/responses and pairs them by order.
+//!
+//! READING GUIDE, step 11 of 15, continued (previous: protocols.rs, next: protocols/mqtt.rs).
+//!
+//! Read in the order data flows through it:
+//! 1. `FACTORY`, `probe`: how the registry recognises HTTP.
+//! 2. `HttpDecoder` + `Side`: one buffer per direction plus the queue of unanswered request methods.
+//! 3. `feed` → `drain` → `next_message`: append a chunk, then cut out every complete message.
+//! 4. `request_framing` / `response_framing` / `chunked_len`: HTTP's rules for "where does the body end".
+//! 5. `build_message`: turning a parsed message into generic `Field`s and pairing responses with requests.
+//! 6. The tests at the bottom: each one is a small, readable example of input and expected output.
 
 use std::collections::VecDeque;
 
@@ -6,6 +16,18 @@ use bytes::Bytes;
 
 use crate::core::decoder::{Confidence, DecodeOutput, DecoderFactory, Field, Message, ProtocolDecoder};
 use crate::core::event::Direction;
+
+// What one direction of an HTTP/1.1 connection looks like on the wire:
+//
+//   GET /index.html HTTP/1.1\r\n        ← start line (method, target, version)
+//   Host: example.com\r\n               ← headers, one per line
+//   Content-Length: 5\r\n
+//   \r\n                                ← empty line: end of the "head"
+//   hello                               ← body; its length comes from the headers ("framing")
+//   GET /next HTTP/1.1\r\n               ← the next request may follow immediately (keep-alive)
+//
+// The decoder therefore works in two steps: find "\r\n\r\n" to get the head, then use the headers
+// to know how many body bytes to wait for. See `Framing` for the three possibilities.
 
 const NAME: &str = "http";
 /// Header sections larger than this are reported as malformed instead of being buffered forever.
@@ -65,13 +87,18 @@ struct Head {
     headers: Vec<(String, String)>,
 }
 
+/// How the end of a body is found.
 enum Framing {
+    /// `Content-Length: N` (or no body at all: N = 0).
     Fixed(usize),
+    /// `Transfer-Encoding: chunked`: the body is a series of `<hex size>\r\n<data>\r\n`, ending with size 0.
+    /// Used when the sender does not know the length in advance (streamed or generated content).
     Chunked,
     /// Body runs until the server closes the connection.
     UntilClose,
 }
 
+/// Result of one attempt to cut a message from the front of a buffer.
 enum Step {
     Complete(Message),
     NeedMore,
@@ -160,6 +187,8 @@ impl HttpDecoder {
         out
     }
 
+    /// Tries to cut exactly one message from the front of `direction`'s buffer.
+    /// Nothing is removed from the buffer unless a whole message is there (`NeedMore` keeps it intact).
     fn next_message(&mut self, direction: Direction, eof: bool) -> Step {
         let side = match direction {
             Direction::ClientToServer => &self.requests,
@@ -169,6 +198,7 @@ impl HttpDecoder {
             return Step::NeedMore;
         }
 
+        // Step 1: the head is complete once the empty line has arrived
         let Some(head_len) = find(&side.buf, b"\r\n\r\n").map(|pos| pos + 4) else {
             return if side.buf.len() > MAX_HEAD_LEN {
                 Step::Invalid("header section too large".into())
@@ -180,6 +210,7 @@ impl HttpDecoder {
             Ok(head) => head,
             Err(reason) => return Step::Invalid(reason),
         };
+        // Step 2: headers tell where the body ends; a response also depends on its request (HEAD has no body)
         let framing = match direction {
             Direction::ClientToServer => request_framing(&head),
             Direction::ServerToClient => response_framing(&head, self.pending_methods.front()),
@@ -189,6 +220,7 @@ impl HttpDecoder {
             Err(reason) => return Step::Invalid(reason),
         };
 
+        // Step 3: is the whole body here yet?
         let body = &side.buf[head_len..];
         let body_len = match framing {
             Framing::Fixed(len) => (body.len() >= len).then_some(len),
@@ -202,6 +234,7 @@ impl HttpDecoder {
             return Step::NeedMore;
         };
 
+        // Step 4: build the message, then remove its bytes from the buffer and advance the offset
         let total = head_len + body_len;
         let span = side.start..side.start + total as u64;
         let body = Bytes::copy_from_slice(&side.buf[head_len..total]);
@@ -262,10 +295,13 @@ impl HttpDecoder {
     }
 }
 
+/// Position of the first occurrence of `needle`; a simple linear scan is fine for headers.
 fn find(haystack: &[u8], needle: &[u8]) -> Option<usize> {
     haystack.windows(needle.len()).position(|window| window == needle)
 }
 
+/// Splits a complete head into the start line and header pairs. Lossy UTF-8: odd bytes become '�'
+/// instead of failing, because a proxy must tolerate whatever devices send.
 fn parse_head(raw: &[u8]) -> Result<Head, String> {
     let text = String::from_utf8_lossy(raw);
     let mut lines = text.split("\r\n");
@@ -323,6 +359,8 @@ fn request_framing(head: &Head) -> Result<Framing, String> {
     Ok(Framing::Fixed(content_length(head)?.unwrap_or(0)))
 }
 
+/// Response bodies have more rules than request bodies: some statuses never have one, a response
+/// to HEAD never has one (even with Content-Length), and without any length the body runs until close.
 fn response_framing(head: &Head, request_method: Option<&String>) -> Result<Framing, String> {
     if !head.start_line[0].starts_with("HTTP/") {
         return Err("not an HTTP status line".into());
@@ -347,6 +385,9 @@ fn response_framing(head: &Head, request_method: Option<&String>) -> Result<Fram
 }
 
 /// Wire length of a chunked body, or `None` if it is not complete yet.
+///
+/// Example: `5\r\nhello\r\n0\r\n\r\n` has wire length 15 and carries the 5-byte body "hello".
+/// Returns `Ok(None)` while incomplete, so the caller waits for more data.
 fn chunked_len(body: &[u8]) -> Result<Option<usize>, String> {
     let mut pos = 0;
     loop {

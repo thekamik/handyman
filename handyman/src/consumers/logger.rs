@@ -1,3 +1,7 @@
+//! READING GUIDE, step 13 of 15, continued (previous: consumers.rs, next: consumers/summary.rs).
+//!
+//! The simplest possible bus consumer; use `run` as the template for writing new ones.
+
 use tokio::sync::broadcast::{self, error::RecvError};
 use tracing::{debug, info, warn};
 
@@ -6,6 +10,8 @@ use crate::core::event::{Event, EventKind};
 const PREVIEW_LEN: usize = 48;
 
 /// Logs every event as it happens; `Data` chunks only at debug level (`RUST_LOG=debug`).
+///
+/// Template for any consumer: `recv()` until the bus is closed, treating `Lagged` as a warning, not an error.
 pub async fn run(mut events: broadcast::Receiver<Event>) {
     loop {
         match events.recv().await {

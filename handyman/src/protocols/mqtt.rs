@@ -1,9 +1,30 @@
 //! MQTT 3.1.1 / 5.0 decoder: frames packets by their remaining-length header and extracts key fields.
+//!
+//! READING GUIDE, step 12 of 15 (previous: protocols/http.rs, next: consumers.rs).
+//!
+//! Same `ProtocolDecoder` shape as HTTP, but binary. Compare with http.rs:
+//! - framing is simpler: every packet starts with a type byte and a length (`remaining_length`),
+//!   so `feed` always knows how many bytes to wait for;
+//! - field extraction is harder: `decode_packet` walks the binary layout with the `Reader` cursor.
+//!
+//! Read `probe`, `remaining_length`, `feed`, then `decode_packet` and `Reader`, then the tests.
 
 use bytes::Bytes;
 
 use crate::core::decoder::{Confidence, DecodeOutput, DecoderFactory, Field, Message, ProtocolDecoder};
 use crate::core::event::Direction;
+
+// Every MQTT packet has the same outer shape (the "fixed header"):
+//
+//   byte 0      : packet type (high 4 bits) + flags (low 4 bits), e.g. 0x30 = PUBLISH, QoS 0
+//   bytes 1..=4 : "remaining length": number of bytes that follow, as a variable-length integer
+//   rest        : variable header + payload, layout depends on the packet type
+//
+// Example PUBLISH of "on" to topic "a/b":  30 07 00 03 61 2f 62 6f 6e
+//   30 = PUBLISH, 07 = 7 bytes follow, 00 03 = topic length, "a/b", then payload "on"
+//
+// Because the length comes first, framing is trivial compared to HTTP: read the header,
+// wait until `1 + used + remaining` bytes are buffered, cut the packet out.
 
 const NAME: &str = "mqtt";
 
@@ -36,6 +57,9 @@ fn create() -> Box<dyn ProtocolDecoder> {
 
 /// Decodes the variable-length integer used for "remaining length" and property lengths.
 /// Returns `(value, bytes used)`, or `None` if more bytes are needed.
+///
+/// Each byte carries 7 bits of the value (least significant first); the top bit says "another byte follows".
+/// Example: `C1 02` → 0x41 + (0x02 << 7) = 65 + 256 = 321.
 fn remaining_length(data: &[u8]) -> Result<Option<(usize, usize)>, String> {
     let mut value = 0;
     for (i, &byte) in data.iter().take(4).enumerate() {
@@ -179,6 +203,8 @@ fn packet_name(kind: u8) -> &'static str {
 }
 
 /// Decodes one complete packet: `header` is the fixed-header byte, `body` everything after the length.
+/// `level` is shared state across packets: CONNECT sets the protocol version, and later packets of
+/// MQTT 5 contain extra property blocks that must be skipped to reach the fields after them.
 fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, String> {
     let kind = header >> 4;
     let name = packet_name(kind);
@@ -190,6 +216,8 @@ fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, Stri
         1 => {
             let protocol = r.string()?;
             let protocol_level = r.u8()?;
+            // Connect flags bit by bit: 0x80 username, 0x40 password, 0x20 will retain,
+            // 0x18 will QoS, 0x04 will flag, 0x02 clean session
             let flags = r.u8()?;
             let keep_alive = r.u16()?;
             *level = protocol_level;
@@ -230,6 +258,7 @@ fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, Stri
             format!("CONNACK code={code}")
         }
         3 => {
+            // PUBLISH keeps its flags in the fixed header: bit 3 dup, bits 2-1 QoS, bit 0 retain
             let qos = (header >> 1) & 0x03;
             let topic = r.string()?;
             if qos > 0 {
@@ -247,6 +276,7 @@ fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, Stri
             fields.push(Field::bytes("mqtt.payload", payload));
             summary
         }
+        // PUBACK, PUBREC, PUBREL, PUBCOMP, SUBACK, UNSUBACK: start with the packet id they answer
         4..=7 | 9 | 11 => {
             let id = r.u16()?;
             packet_id = Some(id);
@@ -269,6 +299,7 @@ fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, Stri
             }
             format!("{name} id={id} topics={topics:?}")
         }
+        // PINGREQ, PINGRESP, DISCONNECT, AUTH: nothing we need to extract (yet)
         12..=15 => name.to_string(),
         _ => return Err(format!("reserved packet type {kind}")),
     };
@@ -280,6 +311,8 @@ fn decode_packet(header: u8, body: &[u8], level: &mut u8) -> Result<Packet, Stri
 }
 
 /// Cursor over a packet body; every read fails cleanly on truncated data instead of panicking.
+///
+/// `'a` ties returned slices (`take`) to the packet buffer: they are views into it, not copies.
 struct Reader<'a> {
     data: &'a [u8],
     pos: usize,

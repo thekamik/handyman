@@ -1,3 +1,8 @@
+//! READING GUIDE, step 4 of 15 (previous: core/event.rs, next: core/acceptor.rs).
+//!
+//! The only link between forwarding and analysis. The forwarding side calls `publish`;
+//! every consumer calls `subscribe` once and loops on `recv()` (see `consumers/logger.rs::run`).
+
 use tokio::sync::broadcast;
 
 use crate::core::event::Event;
@@ -13,7 +18,9 @@ pub struct EventBus {
 }
 
 impl EventBus {
+    /// `capacity` is how many events may wait for the slowest subscriber before it starts losing them.
     pub fn new(capacity: usize) -> Self {
+        // The channel also returns a first receiver; we drop it (`_`) and create receivers on demand
         let (sender, _) = broadcast::channel(capacity);
         Self { sender }
     }

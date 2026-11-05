@@ -1,3 +1,9 @@
+//! READING GUIDE, step 8 of 15 (previous: core/flow.rs, next: core/decoder.rs).
+//!
+//! We now switch from the forwarding half to the observation half.
+//! A `Stack` is what a consumer builds for one flow by collecting its events from the bus.
+//! It is filled by `core/flow_table.rs` (step 10); `decoded` is filled by the decoders (step 9).
+
 use crate::core::decoder::DecodeOutput;
 use crate::core::event::{Direction, Event, EventKind, FlowId, FlowMeta};
 
@@ -21,6 +27,8 @@ impl Stack {
     }
 
     /// Appends an event; returns it back as an error if it belongs to another flow.
+    ///
+    /// Returning the rejected event (instead of dropping it) lets the caller decide what to do with it.
     pub fn push(&mut self, event: Event) -> Result<(), Event> {
         if event.flow_id != self.flow_id {
             return Err(event);
@@ -45,6 +53,8 @@ impl Stack {
     }
 
     /// Payload chunks sent in one direction, in order.
+    /// Lazy: nothing is copied, the iterator walks `events` only when consumed,
+    /// e.g. `stack.data(Direction::ClientToServer).map(|chunk| chunk.len()).sum::<usize>()`.
     pub fn data(&self, direction: Direction) -> impl Iterator<Item = &[u8]> {
         self.events.iter().filter_map(move |event| match &event.kind {
             EventKind::Data { direction: d, payload, .. } if *d == direction => Some(&payload[..]),

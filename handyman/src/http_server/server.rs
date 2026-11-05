@@ -1,4 +1,9 @@
 //! Minimal static file server used as a known upstream for testing the proxy; not a production server.
+//!
+//! READING GUIDE, step 15 of 15 (previous: core/handler.rs). This is the end of the guided path.
+//!
+//! Not part of the proxy: a known, predictable upstream for testing (`handyman serve`).
+//! Read `create_server`, then `handle_connection`, then `serve_file` + `sanitize` (path traversal protection).
 
 use std::io;
 use std::net::SocketAddr;
@@ -105,6 +110,8 @@ async fn serve_file(root_dir: &Path, target: &str) -> Response {
 }
 
 /// Turns a URL path into a relative file path, rejecting `..` and anything else that could escape the root.
+///
+/// Example: "/css/style.css" → Some("css/style.css"); "/../etc/passwd" → None (`..` is `ParentDir`).
 fn sanitize(path: &str) -> Option<PathBuf> {
     let relative = Path::new(path.trim_start_matches('/'));
     relative

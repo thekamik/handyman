@@ -1,3 +1,8 @@
+//! READING GUIDE, step 13 of 15, continued (previous: consumers/logger.rs, next: core/handler.rs).
+//!
+//! Called by `core::flow_table::run` (see the closure in `main.rs::proxy`) with each finished flow.
+//! Shows how to read a `Stack`: metadata from `Started`, totals from `Ended`, messages from `decoded`.
+
 use tracing::{info, warn};
 
 use crate::core::decoder::DecodeOutput;

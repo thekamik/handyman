@@ -1,3 +1,10 @@
+//! READING GUIDE, step 14 of 15 (previous: consumers/summary.rs, next: http_server/server.rs).
+//!
+//! A preview of active mode, where the proxy changes traffic instead of only watching it.
+//! Nothing calls this code yet. To use it, decoding must move from the flow table (after the fact)
+//! into `flow.rs::Pump::run` (before forwarding), and the pump would forward, drop or replace each
+//! message according to the returned `Action`.
+
 use bytes::Bytes;
 
 use crate::core::decoder::Message;

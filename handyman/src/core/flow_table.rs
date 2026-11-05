@@ -1,3 +1,9 @@
+//! READING GUIDE, step 10 of 15 (previous: core/decoder.rs, next: protocols.rs and protocols/http.rs).
+//!
+//! The consumer that connects the previous three steps: it receives events from the bus,
+//! keeps one `(Stack, DecodingSession)` per active flow, and returns the stack when the flow ends.
+//! Read `apply` first (one event in, maybe one finished stack out), then `run` (the bus loop around it).
+
 use std::collections::HashMap;
 
 use tokio::sync::broadcast::{self, error::RecvError};
@@ -24,6 +30,7 @@ impl FlowTable {
 
     /// Applies an event; returns the flow's stack once it has ended, removing it from the table.
     pub fn apply(&mut self, event: Event) -> Option<Stack> {
+        // 1. Find this flow's state, or create it on the first event
         let id = event.flow_id;
         let (stack, session) = self.flows.entry(id).or_insert_with(|| {
             // A missing `Started` (lost event) still gets a stack, just without port-based decoder choice
@@ -34,6 +41,7 @@ impl FlowTable {
             (Stack::new(id), DecodingSession::new(&self.registry, port))
         });
 
+        // 2. Let the decoder see the bytes (or flush leftovers at the end)
         let decoded = match &event.kind {
             EventKind::Data { direction, offset, payload, .. } => {
                 session.on_data(&self.registry, *direction, *offset, payload)
@@ -41,11 +49,13 @@ impl FlowTable {
             EventKind::Ended { .. } => session.finish(),
             EventKind::Started(_) => Vec::new(),
         };
+        // 3. Store the results and the raw event itself in the stack
         stack.decoded.extend(decoded);
         stack.protocol = session.protocol();
         let ended = matches!(event.kind, EventKind::Ended { .. });
         let _ = stack.push(event); // cannot fail: the stack was looked up by this event's flow_id
 
+        // 4. A finished flow leaves the table and goes to the caller
         if ended {
             return self.flows.remove(&id).map(|(stack, _)| stack);
         }

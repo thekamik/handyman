@@ -1,3 +1,17 @@
+//! The plug-in interface that turns raw byte chunks into protocol messages.
+//!
+//! READING GUIDE, step 9 of 15 (previous: core/stack.rs, next: core/flow_table.rs).
+//!
+//! Read in this order:
+//! 1. `Message`, `Field`, `DecodeOutput`: what a decoder produces.
+//! 2. `ProtocolDecoder`: what every protocol implements (`feed`, `reset`, `finish`).
+//! 3. `DecoderFactory`, `DecoderRegistry`: how protocols are registered and recognised.
+//! 4. `DecodingSession`: the per-flow glue that picks a decoder and protects it from gaps.
+//!
+//! Core problem a decoder solves: TCP delivers a byte stream, not messages. One chunk may hold
+//! half a message, or three messages and a bit of a fourth, so a decoder buffers bytes until
+//! its protocol's framing rules say a message is complete.
+
 use std::ops::Range;
 
 use bytes::Bytes;
@@ -86,6 +100,12 @@ pub enum DecodeOutput {
 }
 
 /// Turns the raw byte streams of one flow into protocol messages; one instance per flow.
+///
+/// Used as `Box<dyn ProtocolDecoder>`: the concrete type (HttpDecoder, MqttDecoder...) is chosen at runtime
+/// per flow, so calls go through a vtable (dynamic dispatch). `Send` lets the box move between threads.
+///
+/// Implementations usually keep one buffer per direction and follow the same pattern in `feed`:
+/// append `data`, then loop "is there a complete message at the front?" → cut it out → repeat.
 pub trait ProtocolDecoder: Send {
     fn name(&self) -> &'static str;
 
@@ -104,6 +124,9 @@ pub trait ProtocolDecoder: Send {
 
 /// Registration entry for a protocol: how to recognise it and how to create its decoder.
 #[derive(Clone, Copy)]
+///
+/// `probe` and `create` are plain function pointers (`fn`), not closures: a factory is a constant
+/// known at compile time (see `http::FACTORY`), so it can be copied freely and stored in a `static`.
 pub struct DecoderFactory {
     pub name: &'static str,
     /// Well-known server ports; checked before probing.
@@ -138,6 +161,10 @@ impl DecoderRegistry {
 }
 
 /// Decoding state of one flow: picks a decoder, detects gaps and feeds chunks to it.
+///
+/// Decoder choice, in order: (1) the server port matches a factory → decided in `new`;
+/// (2) otherwise the first `Data` chunk is probed once; (3) nothing matched → the flow stays undecoded
+/// (raw events are still kept, so it can be decoded later once a decoder exists).
 pub struct DecodingSession {
     decoder: Option<Box<dyn ProtocolDecoder>>,
     probed: bool,
