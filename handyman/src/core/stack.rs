@@ -1,15 +1,23 @@
-use crate::model::event::{Direction, Event, EventKind, FlowId, FlowMeta};
+use crate::core::decoder::DecodeOutput;
+use crate::core::event::{Direction, Event, EventKind, FlowId, FlowMeta};
 
 /// All events of a single flow, in arrival order, built by a consumer from the event channel.
+///
+/// `events` are the source of truth; `decoded` is derived from them and can always be rebuilt
+/// by feeding the events through a decoder again.
 #[derive(Debug, Clone)]
 pub struct Stack {
     pub flow_id: FlowId,
     pub events: Vec<Event>,
+    /// Name of the decoder chosen for this flow, if any.
+    pub protocol: Option<&'static str>,
+    /// Messages (and malformed byte ranges) reconstructed from the raw `Data` events.
+    pub decoded: Vec<DecodeOutput>,
 }
 
 impl Stack {
     pub fn new(flow_id: FlowId) -> Self {
-        Self { flow_id, events: Vec::new() }
+        Self { flow_id, events: Vec::new(), protocol: None, decoded: Vec::new() }
     }
 
     /// Appends an event; returns it back as an error if it belongs to another flow.
