@@ -1,0 +1,37 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Strona pobiera {{ items }} produktów. Wszystkie odpowiedzi mają ten sam kod statusu i podobną treść,
+    ale jedna z nich ma dodatkowy nagłówek, którego nazwa zaczyna się od <code>X-Handyman</code>.
+    Znajdź ją filtrem.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <ul id="items"></ul>
+
+  <script>
+    const list = document.getElementById("items");
+    for (let id = 1; id <= {{ items }}; id++) {
+      fetch(`/exercise4/item/${id}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const li = document.createElement("li");
+          li.textContent = data.name;
+          list.appendChild(li);
+        });
+    }
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Filtr <code>~h</code> przeszukuje nagłówki, a <code>~hs</code> tylko nagłówki odpowiedzi.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    W mitmproxy naciśnij <code>f</code> i wpisz <code>~hs X-Handyman</code>.
+  </details>
+{% endblock %}

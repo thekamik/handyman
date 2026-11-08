@@ -1,0 +1,33 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Po otwarciu ta strona sama pobiera z serwera stan urządzenia i pokazuje go poniżej.
+    Serwer odsyła więcej danych, niż strona wyświetla. Znajdź je w proxy.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Stan urządzenia: <strong id="status">ładowanie…</strong></p>
+
+  <script>
+    // Background request: the browser sends it without reloading the page
+    fetch("/exercise2/api/status")
+      .then((response) => response.json())
+      .then((data) => {
+        document.getElementById("status").textContent =
+          `${data.device}: ${data.online ? "online" : "offline"}`;
+      });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Ile żądań wysłała przeglądarka po otwarciu tej strony? Policz je w proxy.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Otwórz odpowiedź na <code>GET /exercise2/api/status</code>. Klawiszem <code>m</code> możesz wybrać widok JSON.
+  </details>
+{% endblock %}

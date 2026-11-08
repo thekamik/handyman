@@ -1,0 +1,38 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Formularz pozwala wybrać tylko plan <em>free</em> albo <em>basic</em>. Plan <em>premium</em> jest wyszarzony.
+    Przechwyć wysłanie formularza w proxy i zmień wybrany plan, zanim żądanie dotrze do serwera.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <form method="post" class="stack">
+    <label>
+      Plan
+      <select name="plan">
+        <option value="free">free</option>
+        <option value="basic">basic</option>
+        <option value="premium" disabled>premium (niedostępny)</option>
+      </select>
+    </label>
+    <button type="submit">Aktywuj</button>
+  </form>
+
+  {% if result %}
+    <p class="message ok">{{ result }}</p>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Przechwytywanie włączasz w mitmproxy klawiszem <code>i</code>. Filtr <code>~m POST &amp; ~u /exercise5</code> zatrzyma tylko wysłanie tego formularza.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Zatrzymane żądanie: <code>Enter</code>, potem <code>e</code> → <code>urlencoded form</code>, zmień wartość pola <code>plan</code>,
+    wyjdź z edytora (<code>q</code>) i puść żądanie dalej klawiszem <code>a</code>.
+  </details>
+{% endblock %}
