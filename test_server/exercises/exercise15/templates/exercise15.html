@@ -1,0 +1,46 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Panel urządzenia pozwala wysłać tylko polecenie <code>status</code>. Ciebie interesuje <code>unlock</code>.
+    Każde polecenie jest podpisane: <code>sig = HMAC-SHA256(klucz, "nonce:polecenie")</code>, zapisane szesnastkowo.
+    Serwer odrzuca zmienione polecenie ze starym podpisem, a każdy nonce działa tylko raz.
+    Na szczęście klucz wyciekł z oprogramowania urządzenia: <code>{{ key }}</code>.
+    Napisz addon, który w locie zamieni polecenie i podpisze je na nowo.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <form method="post">
+    <input type="hidden" name="nonce" value="{{ nonce }}">
+    <input type="hidden" name="cmd" value="status">
+    <input type="hidden" name="sig" value="{{ sig }}">
+    <button type="submit">Wyślij polecenie status</button>
+  </form>
+
+  {% if result %}
+    <p class="message {{ result[0] }}">{{ result[1] }}</p>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Funkcja <code>request(flow)</code> w addonie działa, zanim żądanie opuści proxy.
+    Pola formularza zmieniasz przez <code>flow.request.urlencoded_form</code>, a podpis policzysz modułami <code>hmac</code> i <code>hashlib</code>.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    <pre><code>import hashlib, hmac
+
+KEY = b"{{ key }}"
+
+def request(flow):
+    if flow.request.method == "POST" and flow.request.path.startswith("/exercise15/"):
+        form = flow.request.urlencoded_form
+        form["cmd"] = "unlock"
+        message = f"{form['nonce']}:unlock".encode()
+        form["sig"] = hmac.new(KEY, message, hashlib.sha256).hexdigest()</code></pre>
+    Uruchom <code>mitmproxy -s podpis.py</code> i wyślij formularz.
+  </details>
+{% endblock %}

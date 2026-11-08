@@ -1,0 +1,54 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Strona wysyła {{ requests }} pakietów telemetrii. Mniej więcej co drugą odpowiedź serwer oznacza nagłówkiem
+    <code>X-Part</code>, który niesie jeden znak flagi i jego pozycję, np. <code>7/30=a</code>, czyli siódmy z trzydziestu znaków to <code>a</code>.
+    Znaki przychodzą w przypadkowej kolejności. Zamiast przepisywać je ręcznie, napisz addon do mitmproxy,
+    który zbierze je za ciebie i złoży flagę.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Wysłane pakiety: <strong id="count">0</strong> / {{ requests }}</p>
+  <p><button id="send">Wyślij telemetrię jeszcze raz</button></p>
+
+  <script>
+    function send() {
+      let count = 0;
+      for (let n = 1; n <= {{ requests }}; n++) {
+        fetch(`/exercise14/api/telemetry/${n}`, { cache: "no-store" }).then(() => {
+          document.getElementById("count").textContent = ++count;
+        });
+      }
+    }
+    document.getElementById("send").addEventListener("click", send);
+    send();
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Addon to plik Pythona z funkcją <code>response(flow)</code>, którą mitmproxy wywołuje dla każdej odpowiedzi.
+    Uruchamiasz go poleceniem <code>mitmproxy -s zbieracz.py</code>. Wynik wypisany przez <code>logging.info</code> zobaczysz w dzienniku (<code>E</code>).
+    Po uruchomieniu proxy z addonem kliknij „Wyślij telemetrię jeszcze raz”.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Szkielet do uzupełnienia:
+    <pre><code>import logging
+
+parts = {}
+
+def response(flow):
+    value = flow.response.headers.get("X-Part")   # e.g. "7/30=a"
+    if not value:
+        return
+    position, char = value.split("=", 1)
+    number, total = position.split("/")
+    parts[int(number)] = char
+    if len(parts) == int(total):
+        logging.info("".join(parts[i] for i in sorted(parts)))</code></pre>
+  </details>
+{% endblock %}
