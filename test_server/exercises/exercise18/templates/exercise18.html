@@ -1,0 +1,44 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Ten termometr nie wysyła osobnych żądań. Otwiera jedno połączenie WebSocket i przez nie dostaje
+    {{ messages }} wiadomości z pomiarami. Strona pokazuje tylko temperaturę i pomija wiadomości innego typu.
+    Jedna z nich zawiera flagę. Znajdź ją w proxy.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Temperatura: <strong id="temp">…</strong>, odebrane wiadomości: <strong id="count">0</strong> / {{ messages }}</p>
+  <p><button id="connect">Połącz jeszcze raz</button></p>
+
+  <script>
+    function connect() {
+      let count = 0;
+      // ws:// on the same host and port as the page, so it goes through the same proxy
+      const ws = new WebSocket(`ws://${location.host}/exercise18/ws`);
+      ws.addEventListener("message", (event) => {
+        const data = JSON.parse(event.data);
+        document.getElementById("count").textContent = ++count;
+        if (data.type === "telemetry") {
+          document.getElementById("temp").textContent = `${data.temperature} °C`;
+        }
+      });
+    }
+    document.getElementById("connect").addEventListener("click", connect);
+    connect();
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Na liście w mitmproxy połączenie WebSocket to jedna pozycja, <code>GET /exercise18/ws</code> z kodem <code>101</code>.
+    Wiadomości są w środku, na osobnej zakładce.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Otwórz tę pozycję (<code>Enter</code>) i przejdź klawiszem <code>Tab</code> na zakładkę WebSocket Messages.
+    Szukaj wiadomości, której <code>type</code> nie jest <code>telemetry</code>. Na liście możesz też użyć filtra <code>~websocket &amp; ~b debug</code>.
+  </details>
+{% endblock %}

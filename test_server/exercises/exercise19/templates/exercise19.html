@@ -1,0 +1,66 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Inteligentne gniazdko <code>{{ device_id }}</code> przy każdym starcie pobiera konfigurację z chmury producenta
+    (<code>GET /exercise19/cloud/config</code>). Producent wyłączył chmurę, więc gniazdko w kółko dostaje błąd i nie działa.
+  </p>
+  <p>
+    Ze starej dokumentacji wiadomo, że chmura odpowiadała kodem <code>200</code> i takim JSON-em:
+    <code>{"device_id": "...", "mode": "cloud" albo "local", "owner": "..."}</code>.
+    Napisz addon, który sam odpowie zamiast chmury, tak żeby żądanie w ogóle nie dotarło do serwera.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Stan gniazdka: <strong id="state">uruchamianie…</strong></p>
+  <p id="result" class="message ok" hidden></p>
+
+  <script>
+    async function boot() {
+      const response = await fetch("/exercise19/cloud/config", { cache: "no-store" });
+      if (!response.ok) {
+        document.getElementById("state").textContent = `brak chmury (kod ${response.status}), ponowna próba za 3 s`;
+        setTimeout(boot, 3000);
+        return;
+      }
+      const setup = await fetch("/exercise19/device/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: await response.text(),
+      });
+      const data = await setup.json();
+      document.getElementById("state").textContent = data.ok ? "działa" : `błąd konfiguracji: ${data.error}`;
+      if (data.ok) {
+        const result = document.getElementById("result");
+        result.textContent = `${data.message} Flaga: ${data.flag}`;
+        result.hidden = false;
+      } else {
+        setTimeout(boot, 3000);
+      }
+    }
+    boot();
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Jeśli addon w funkcji <code>request(flow)</code> ustawi <code>flow.response</code>, mitmproxy od razu odeśle tę odpowiedź
+    i nie połączy się z serwerem. Odpowiedź tworzysz przez <code>http.Response.make(kod, treść, nagłówki)</code>.
+    Komunikaty o błędach konfiguracji pojawią się na stronie.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    <pre><code>import json
+from mitmproxy import http
+
+def request(flow):
+    if flow.request.path.startswith("/exercise19/cloud/config"):
+        config = {"device_id": "{{ device_id }}", "mode": "local", "owner": "ja"}
+        flow.response = http.Response.make(
+            200, json.dumps(config), {"Content-Type": "application/json"}
+        )</code></pre>
+    Uruchom <code>mitmproxy -s chmura.py</code>. Na liście zobaczysz, że ta odpowiedź nie przyszła z serwera.
+  </details>
+{% endblock %}

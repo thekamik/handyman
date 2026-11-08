@@ -17,8 +17,11 @@ Projekt edukacyjny: nauka pracy z mitmproxy (i docelowo Pythonem `requests`) do 
 - Podpowiedzi: dwie, od ogólnej do dokładnej (konkretne klawisze i filtry mitmproxy).
 - Testuj klientem testowym Flaska z `LOCK_EXERCISES = False`; do testów `/flags` ustaw tymczasowy `app.instance_path`, żeby nie ruszać postępu użytkownika w `test_server/instance/`.
 
-## Plan zadań 6–20
+## Zestaw zadań (komplet 1–20)
 
-6 łańcuch przekierowań · 7 ciasteczko roli · 8 User-Agent · 9 edycja odpowiedzi · 10 replay · 11 edycja + replay `?id=` (IDOR) · 12 zakodowana treść (base64+gzip) · 13 stała podmiana (`modify_headers`/`modify_body`) · 14 pierwszy addon (sklejanie kawałków flagi) · 15 addon podpisujący żądania · 16 eksport do `requests` (sesja, CSRF) · 17 token ważny 2 s (skrypt `requests`) · 18 WebSocket · 19 martwa chmura (`http.Response.make`) · 20 finał: termostat.
+1–2 obserwacja · 3–4 filtrowanie · 5 formularz · 6 łańcuch przekierowań · 7 ciasteczko roli · 8 User-Agent · 9 edycja odpowiedzi · 10 replay · 11 edycja + replay `?id=` (IDOR) · 12 base64+gzip · 13 `modify_headers` · 14 pierwszy addon (sklejanie kawałków flagi) · 15 addon podpisujący żądania (HMAC + nonce) · 16 `requests`: logowanie z CSRF + paginacja · 17 `requests`: wyzwanie na 1 s · 18 WebSocket (`flask-sock`) · 19 martwa chmura (`http.Response.make`) · 20 finał: termostat.
 
-Otwarte decyzje: zależność dla WebSocket (`flask-sock` vs SSE), czy dodać zadanie z HTTPS.
+- Zadania nie mogą zakładać konkretnego trybu proxy: kursanci używają trybu zwykłego albo reverse (w reverse ruch do innych hostów omija proxy), więc wszystko działa na tym samym hoście i porcie.
+- Zadania z addonami/skryptami testuj end-to-end: Flask na porcie testowym + `proxy/.venv/bin/mitmdump` z kodem wziętym z wyrenderowanej podpowiedzi.
+- Znane ograniczenie zadań 9 i 19: serwer nie widzi zmian odpowiedzi, wynik odsyła JS strony, więc da się je obejść ręcznym żądaniem.
+- Nie ma zadania z HTTPS (serwer działa po HTTP); ewentualnie do dodania później.

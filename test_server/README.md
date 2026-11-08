@@ -18,6 +18,8 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
+Po pobraniu nowej wersji repozytorium (`git pull`) uruchom ostatnie polecenie jeszcze raz, bo mogły dojść nowe zależności (np. `flask-sock` dla zadania z WebSocket).
+
 ## Uruchomienie lokalnie (podczas pracy nad kodem)
 
 ```bash

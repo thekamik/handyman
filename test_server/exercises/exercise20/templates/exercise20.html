@@ -1,0 +1,40 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Ostatnie zadanie łączy wszystko, czego się nauczyłeś. Termostat wysyła {{ packets }} pakietów telemetrii
+    i ma ukryty tryb serwisowy pod adresem <code>/exercise20/api/service</code>. Flaga jest za trybem serwisowym.
+    Tym razem nie dostaniesz instrukcji krok po kroku: zacznij od zapytania o tryb serwisowy i czytaj uważnie, co odpowiada serwer.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Temperatura: <strong id="temp">…</strong>, pakiety: <strong id="count">0</strong> / {{ packets }}</p>
+
+  <script>
+    let count = 0;
+    for (let seq = 1; seq <= {{ packets }}; seq++) {
+      fetch(`/exercise20/api/telemetry?seq=${seq}`, { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("temp").textContent = `${data.temperature} °C`;
+          document.getElementById("count").textContent = ++count;
+        });
+    }
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Plan: (1) błędy z <code>/exercise20/api/service</code> mówią, czego brakuje;
+    (2) klucz jest w jednym z pakietów telemetrii, znajdziesz go filtrem treści (zadania 3–4);
+    (3) udawanie urządzenia znasz z zadania 8; (4) na wyzwanie jest sekunda, więc potrzebny jest skrypt (zadanie 17).
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Filtr <code>~u /exercise20/api/telemetry &amp; ~bs maintenance_key</code> pokaże pakiet z kluczem.
+    Skrypt <code>requests</code> wysyła oba żądania z nagłówkami <code>User-Agent: HandymanDevice/1.0</code> i <code>X-Maintenance-Key: &lt;klucz&gt;</code>,
+    a odpowiedź liczy jako <code>hashlib.sha256((klucz + nonce).encode()).hexdigest()</code>.
+  </details>
+{% endblock %}
