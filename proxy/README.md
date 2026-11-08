@@ -251,7 +251,6 @@ addons = [Hello()]
 
 - Wypisy z `logging` widać w dzienniku zdarzeń (`E`) w `mitmproxy` albo w terminalu przy `mitmdump`.
 - Addon przeładowuje się sam po zapisaniu pliku, bez restartu proxy.
-- Gotowe przykłady są w [`analyzer/addons/`](../analyzer/addons/).
 - Najważniejsze zdarzenia to `request`, `response`, `error` i `client_connected`. Pola żądania to `flow.request.method`, `.url`, `.headers`, `.cookies`, `.urlencoded_form` i `.content`.
 
 Dokumentacja: https://docs.mitmproxy.org/stable/addons/overview/
