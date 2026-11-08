@@ -4,6 +4,7 @@ Narzędzia do podglądania i automatyzacji ruchu do [`test_server`](../test_serv
 
 | Plik                         | Co robi                                                                 |
 |------------------------------|-------------------------------------------------------------------------|
+| `run_proxy.py`               | uruchamia mitmproxy ze skryptu: własny adres nasłuchu i cel przekierowania |
 | `addons/message_list.py`     | addon mitmproxy: lista wiadomości HTTP z kierunkiem, jedna na wiersz    |
 | `addons/traffic_logger.py`   | addon mitmproxy: wypisuje żądania, pola formularzy i cookies            |
 | `clients/login.py`           | skrypt w `requests`: wypełnia formularz logowania, ruch idzie przez proxy |
@@ -15,6 +16,39 @@ cd analyzer
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
+
+## Proxy ze skryptu (`run_proxy.py`)
+
+Proxy działa jako **reverse proxy**: przeglądarka łączy się z proxy tak, jakby to był serwer, a proxy przekazuje cały ruch do `--target`. W przeglądarce nie trzeba ustawiać żadnego proxy.
+
+```
+przeglądarka ──▶ proxy (--listen-host:--listen-port) ──▶ serwer testowy (--target)
+```
+
+```bash
+cd analyzer
+.venv/bin/python run_proxy.py --target http://192.168.1.10:8000
+```
+
+Potem otwórz w przeglądarce http://127.0.0.1:8080. W terminalu pojawi się lista wiadomości z kierunkiem.
+
+| Opcja             | Domyślnie   | Znaczenie                                                              |
+|-------------------|-------------|------------------------------------------------------------------------|
+| `--target`        | (wymagana)  | serwer, do którego proxy przekazuje ruch                               |
+| `--listen-host`   | `127.0.0.1` | adres nasłuchu proxy; `0.0.0.0` = dostępne z całej sieci               |
+| `--listen-port`   | `8080`      | port nasłuchu proxy                                                    |
+| `--web`           | wyłączone   | dodatkowo panel mitmweb do otwierania i analizy wiadomości             |
+| `--web-port`      | `8081`      | port panelu mitmweb (zawsze tylko na `127.0.0.1`)                      |
+
+Z opcją `--web` skrypt wypisze link z tokenem, np. `http://127.0.0.1:8081/?token=...`. Token zmienia się przy każdym uruchomieniu, a bez niego panel się nie otworzy.
+
+Przykład: proxy dostępne dla innych urządzeń w sieci (np. telefonu), z panelem do analizy:
+
+```bash
+.venv/bin/python run_proxy.py --listen-host 0.0.0.0 --listen-port 8080 --target http://192.168.1.10:8000 --web
+```
+
+Jeśli port jest zajęty, w terminalu pojawi się błąd `address already in use`. Zatrzymaj skrypt (Ctrl+C) i wybierz inny `--listen-port`.
 
 ## Uruchomienie: trzy terminale
 
