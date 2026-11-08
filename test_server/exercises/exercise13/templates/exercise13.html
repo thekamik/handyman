@@ -1,0 +1,48 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    To urządzenie co sekundę odpytuje serwer i wysyła nagłówek <code>X-Mode: normal</code>.
+    Serwer zdradzi flagę, gdy dostanie {{ needed }} odpytań z rzędu z <code>X-Mode: service</code>,
+    a odstęp między nimi nie przekroczy 3 sekund. Ręczna edycja każdego żądania nie zdąży.
+    Każ mitmproxy podmieniać nagłówek automatycznie.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Tryb widziany przez serwer: <strong id="mode">…</strong>, seria: <strong id="streak">0</strong> / {{ needed }}</p>
+  <p id="result" class="message ok" hidden></p>
+
+  <script>
+    function poll() {
+      fetch("/exercise13/api/poll", { headers: { "X-Mode": "normal" }, cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("mode").textContent = data.mode;
+          document.getElementById("streak").textContent = data.streak;
+          if (data.flag) {
+            const result = document.getElementById("result");
+            result.textContent = `Flaga: ${data.flag}`;
+            result.hidden = false;
+          }
+        })
+        // Next poll a second after this one finishes, also after an error
+        .finally(() => setTimeout(poll, 1000));
+    }
+    poll();
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    mitmproxy ma opcję <code>modify_headers</code>, która zmienia nagłówki we wszystkich pasujących wiadomościach bez zatrzymywania ich.
+    Jej wartość ma postać <code>|filtr|nazwa|wartość</code>; pierwszy znak to separator, wybierz taki, którego nie ma w filtrze.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Uruchom proxy z <code>--modify-headers '|~q &amp; ~u /exercise13/api|X-Mode|service'</code>
+    albo w działającym mitmproxy wpisz <code>:set modify_headers '|~q &amp; ~u /exercise13/api|X-Mode|service'</code>.
+    Filtr <code>~q</code> sprawia, że zmienia się nagłówek żądania, a nie odpowiedzi.
+  </details>
+{% endblock %}

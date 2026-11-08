@@ -1,0 +1,40 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Strona pobiera kopię zapasową ustawień routera i pokazuje z niej tylko wersję oprogramowania.
+    W kopii jest też hasło do Wi-Fi, ale w proxy zobaczysz ciąg przypadkowych znaków.
+    Dowiedz się, jak zakodowano treść, i odkoduj ją.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Wersja oprogramowania: <strong id="firmware">ładowanie…</strong></p>
+
+  <script>
+    async function loadBackup() {
+      const response = await fetch("/exercise12/api/backup", { cache: "no-store" });
+      // base64 text -> bytes -> gunzip -> JSON, the same steps you need to do by hand
+      const bytes = Uint8Array.from(atob(await response.text()), (c) => c.charCodeAt(0));
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      const data = JSON.parse(await new Response(stream).text());
+      document.getElementById("firmware").textContent = data.firmware;
+    }
+    loadBackup().catch(() => {
+      document.getElementById("firmware").textContent = "(przeglądarka nie umie rozpakować, ale proxy i tak widzi odpowiedź)";
+    });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Obejrzyj nagłówki odpowiedzi na <code>GET /exercise12/api/backup</code>, jeden z nich opisuje format.
+    Klawisz <code>z</code> w mitmproxy rozpakowuje tylko kodowanie z nagłówka <code>Content-Encoding</code>, a tu go nie ma.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    W podglądzie odpowiedzi naciśnij <code>b</code> i zapisz treść do pliku, np. <code>/tmp/backup.txt</code>.
+    Potem w terminalu: <code>base64 -d /tmp/backup.txt | gunzip</code>.
+  </details>
+{% endblock %}
