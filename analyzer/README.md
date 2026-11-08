@@ -4,6 +4,7 @@ Narzędzia do podglądania i automatyzacji ruchu do [`test_server`](../test_serv
 
 | Plik                         | Co robi                                                                 |
 |------------------------------|-------------------------------------------------------------------------|
+| `addons/message_list.py`     | addon mitmproxy: lista wiadomości HTTP z kierunkiem, jedna na wiersz    |
 | `addons/traffic_logger.py`   | addon mitmproxy: wypisuje żądania, pola formularzy i cookies            |
 | `clients/login.py`           | skrypt w `requests`: wypełnia formularz logowania, ruch idzie przez proxy |
 
@@ -54,6 +55,27 @@ Gdy serwer działa na Pi, dodaj jego adres: `--target http://<IP-Pi>:8000`.
 ```
 
 Hasło widać otwartym tekstem, bo strona działa po HTTP, bez szyfrowania. To jest właśnie to, co proxy pozwala wykryć.
+
+## Lista wiadomości z kierunkiem
+
+```bash
+cd analyzer
+.venv/bin/mitmdump -q -s addons/message_list.py
+```
+
+`-q` ukrywa własne komunikaty mitmdump, więc w terminalu zostaje sama lista:
+
+```
+   #  direction         type     address / content                                        body
+   1  client → server   GET      http://192.168.1.10:8000/login                            0 B
+   1  server → client   200      text/html; charset=utf-8                                758 B
+   2  client → server   POST     http://192.168.1.10:8000/login                           25 B
+   2  server → client   200      text/html; charset=utf-8                               1209 B
+```
+
+Żądanie i odpowiedź mają ten sam numer. Jeśli serwer nie odpowie, w miejscu odpowiedzi pojawi się wiersz `error` z przyczyną.
+
+Oba addony można uruchomić naraz: `-s addons/message_list.py -s addons/traffic_logger.py` (bez `-q`, żeby widzieć wypisy loggera).
 
 ## Przeglądarka zamiast skryptu
 
