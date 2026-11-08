@@ -1,0 +1,45 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Głosowanie na najlepsze urządzenie roku. Flagę dostaniesz po oddaniu {{ needed }} głosów,
+    ale strona pozwala zagłosować tylko raz: przycisk blokuje się po kliknięciu i po odświeżeniu.
+    Nie musisz klikać, wystarczy powtórzyć w proxy żądanie, które przeglądarka już wysłała.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Twoje głosy: <strong id="count">{{ count }}</strong> / {{ needed }}</p>
+  <p><button id="vote" {% if count %}disabled{% endif %}>Zagłosuj</button></p>
+  <p id="result" class="message ok" hidden></p>
+
+  <script>
+    const button = document.getElementById("vote");
+    button.addEventListener("click", () => {
+      button.disabled = true;
+      fetch("/exercise10/vote", { method: "POST" })
+        .then((response) => response.json())
+        .then((data) => {
+          document.getElementById("count").textContent = data.votes;
+          if (data.flag) {
+            const result = document.getElementById("result");
+            result.textContent = `Flaga: ${data.flag}`;
+            result.hidden = false;
+          }
+        });
+    });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Serwer rozpoznaje cię po ciasteczku, a nie po przycisku. Każde kolejne żądanie <code>POST /exercise10/vote</code>
+    z tym samym ciasteczkiem to kolejny głos. Odpowiedź na każde z nich mówi, ile głosów już masz.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    W mitmproxy ustaw kursor na <code>POST /exercise10/vote</code> i naciśnij <code>r</code> (replay).
+    Każde naciśnięcie dodaje nową wiadomość na liście. Powtarzaj, aż odpowiedź będzie zawierać flagę.
+  </details>
+{% endblock %}

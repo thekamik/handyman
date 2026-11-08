@@ -1,0 +1,34 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Strona pokazuje dane twojego urządzenia, pobrane z API po jego numerze.
+    Numery są nadawane po kolei, od {{ first_id }}, a pierwsze urządzenie w systemie należy do administratora.
+    Sprawdź, czy API pozwoli ci odczytać cudze urządzenie: zmień numer w kopii żądania i wyślij ją jeszcze raz.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Twoje urządzenie: <strong id="device">ładowanie…</strong></p>
+
+  <script>
+    fetch("/exercise11/api/device?id={{ your_id }}", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => {
+        document.getElementById("device").textContent = `${data.name} (nr ${data.id})`;
+      });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Numer urządzenia jest w adresie żądania: <code>GET /exercise11/api/device?id={{ your_id }}</code>.
+    Lepiej zmieniać kopię niż oryginał, żeby oryginał został do porównania.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Na tym żądaniu naciśnij <code>D</code> (duplikat), otwórz kopię (<code>Enter</code>), potem <code>e</code> → <code>query</code>,
+    zmień wartość <code>id</code> na {{ first_id }}, wyjdź z edytora (<code>q</code>) i wyślij kopię klawiszem <code>r</code>.
+  </details>
+{% endblock %}
