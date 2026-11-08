@@ -53,4 +53,4 @@ Zarezerwuj stały adres IP dla Pi w ustawieniach DHCP routera. Wtedy adres się 
 
 ## Podgląd ruchu przez proxy
 
-Układ do testów: przeglądarka lub skrypt → mitmproxy na laptopie → serwer na Pi. Instrukcja pojawi się razem z projektem analizatora.
+Układ do testów: przeglądarka lub skrypt → mitmproxy na laptopie → serwer na Pi. Instrukcja: [`analyzer/README.md`](../analyzer/README.md).
