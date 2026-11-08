@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Start{% endblock %}
+
+{% block content %}
+  <h1>Serwer testowy</h1>
+  <p>
+    Ta strona jest celem do ćwiczeń z proxy. Każde kliknięcie to żądanie HTTP,
+    które można podejrzeć w mitmproxy.
+  </p>
+
+  <h2>Co można przetestować</h2>
+  <ul>
+    <li><a href="/login">Formularz logowania</a>: dane z formularza wysyłane metodą POST</li>
+    <li><a href="/static/style.css">Plik CSS</a>: zwykły plik statyczny (GET)</li>
+    <li><a href="/docs">/docs</a>: automatyczna dokumentacja API z FastAPI</li>
+  </ul>
+{% endblock %}

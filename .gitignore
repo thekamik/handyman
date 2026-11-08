@@ -1,0 +1,7 @@
+# Virtual environments (one per project)
+.venv/
+./pagevenv/
+
+# Python bytecode cache
+__pycache__/
+*.pyc

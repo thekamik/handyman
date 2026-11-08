@@ -1,0 +1,67 @@
+/* Minimal, readable styling; the page exists to generate traffic, not to look fancy */
+
+body {
+  margin: 0 auto;
+  max-width: 720px;
+  padding: 0 16px 48px;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: #1f2933;
+  background: #f7f8fa;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #d9dee5;
+}
+
+nav a {
+  margin-right: 12px;
+}
+
+a {
+  color: #2457c5;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+  max-width: 320px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+}
+
+input,
+button {
+  padding: 8px;
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 24px;
+}
+
+th,
+td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #d9dee5;
+  text-align: left;
+  vertical-align: top;
+  word-break: break-all;
+}
+
+th {
+  width: 30%;
+}

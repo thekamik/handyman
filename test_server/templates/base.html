@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}handyman{% endblock %} · test server</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  {# Shared layout: every page fills in the "title" and "content" blocks #}
+  <header>
+    <img src="/static/logo.png" alt="" width="32" height="32">
+    <nav>
+      <a href="/">Start</a>
+      <a href="/login">Logowanie</a>
+    </nav>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
