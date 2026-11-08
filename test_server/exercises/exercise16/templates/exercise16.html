@@ -1,0 +1,68 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Panel urządzenia ma {{ pages }} stron logów, ale wersja demo pokazuje tylko pierwszą.
+    Gdzieś dalej w logach jest flaga. Napisz skrypt w Pythonie z biblioteką <code>requests</code>, który
+    zaloguje się od zera (login <code>{{ username }}</code>, hasło <code>{{ password }}</code>) i przejrzy wszystkie strony.
+    Najpierw zaloguj się w przeglądarce i obejrzyj w proxy, jakie żądania musi powtórzyć twój skrypt.
+    Potem puść skrypt przez proxy i sprawdź, czy jego ruch wygląda tak samo.
+  </p>
+{% endblock %}
+
+{% block body %}
+  {% if user %}
+    <p class="message ok">Zalogowano jako {{ user }}. Strona 1 z {{ pages }}:</p>
+    <ul id="logs"></ul>
+    <script>
+      fetch("/exercise16/api/logs?page=1", { cache: "no-store" })
+        .then((response) => response.json())
+        .then((data) => {
+          for (const entry of data.entries) {
+            const li = document.createElement("li");
+            li.textContent = entry;
+            document.getElementById("logs").appendChild(li);
+          }
+        });
+    </script>
+  {% else %}
+    {% if error == "csrf" %}<p class="message error">Brak albo zły token CSRF.</p>{% endif %}
+    {% if error == "login" %}<p class="message error">Zły login lub hasło.</p>{% endif %}
+    <form method="post" action="{{ url_for('.login') }}">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <p><label>Login <input name="username"></label></p>
+      <p><label>Hasło <input name="password" type="password"></label></p>
+      <button type="submit">Zaloguj</button>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Logowanie to trzy kroki: <code>GET /exercise16/</code> (ciasteczko <code>sid</code> i ukryte pole <code>csrf</code>),
+    <code>POST /exercise16/login</code> (pola <code>csrf</code>, <code>username</code>, <code>password</code>),
+    potem <code>GET /exercise16/api/logs?page=N</code>. <code>requests.Session()</code> sam pamięta ciasteczka między żądaniami.
+    W mitmproxy klawisz <code>x</code> eksportuje żądanie np. jako komendę <code>curl</code>, co pomaga przepisać je na Pythona.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    <pre><code>import re
+import requests
+
+BASE = "http://192.168.1.10:8000/exercise16"   # address of the server
+PROXIES = {"http": "http://127.0.0.1:8080"}     # mitmproxy in regular mode
+# Reverse mode: BASE = "http://127.0.0.1:8080/exercise16" and PROXIES = {}
+
+s = requests.Session()
+s.proxies = PROXIES
+page = s.get(f"{BASE}/").text
+csrf = re.search(r'name="csrf" value="(\w+)"', page).group(1)
+s.post(f"{BASE}/login", data={"csrf": csrf, "username": "{{ username }}", "password": "{{ password }}"})
+for n in range(1, {{ pages }} + 1):
+    for entry in s.get(f"{BASE}/api/logs", params={"page": n}).json()["entries"]:
+        if "handyman{" in entry:
+            print(n, entry)</code></pre>
+    Bibliotekę instalujesz poleceniem <code>pip install requests</code>.
+  </details>
+{% endblock %}

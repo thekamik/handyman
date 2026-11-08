@@ -1,0 +1,61 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Serwer daje zadanie: zsumować {{ count }} liczb i odesłać wynik w ciągu {{ time_limit }} sekundy.
+    Człowiek z kalkulatorem nie zdąży. Podejrzyj w proxy, jak wygląda zadanie i odpowiedź,
+    a potem napisz skrypt <code>requests</code>, który zrobi to za ciebie. Puść skrypt przez proxy, żeby widzieć jego ruch.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p><button id="get">Pobierz zadanie</button></p>
+  <p id="numbers"></p>
+  <form id="answer" hidden>
+    <label>Suma <input id="sum" type="number"></label>
+    <button type="submit">Wyślij</button>
+  </form>
+  <p id="result" class="message" hidden></p>
+
+  <script>
+    let token = null;
+    document.getElementById("get").addEventListener("click", async () => {
+      const data = await (await fetch("/exercise17/api/challenge", { cache: "no-store" })).json();
+      token = data.token;
+      document.getElementById("numbers").textContent = data.numbers.join(" + ");
+      document.getElementById("answer").hidden = false;
+    });
+    document.getElementById("answer").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const response = await fetch("/exercise17/api/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token, sum: Number(document.getElementById("sum").value) }),
+      });
+      const data = await response.json();
+      const result = document.getElementById("result");
+      result.textContent = data.flag ? `Flaga: ${data.flag}` : data.error;
+      result.className = `message ${data.flag ? "ok" : "error"}`;
+      result.hidden = false;
+    });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Spróbuj raz w przeglądarce i obejrzyj dwa żądania: <code>GET /exercise17/api/challenge</code> zwraca token i liczby,
+    <code>POST /exercise17/api/answer</code> wysyła JSON z tokenem i sumą. Skrypt musi zrobić to samo, tylko szybciej.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    <pre><code>import requests
+
+BASE = "http://192.168.1.10:8000/exercise17"
+PROXIES = {"http": "http://127.0.0.1:8080"}
+
+challenge = requests.get(f"{BASE}/api/challenge", proxies=PROXIES).json()
+answer = {"token": challenge["token"], "sum": sum(challenge["numbers"])}
+print(requests.post(f"{BASE}/api/answer", json=answer, proxies=PROXIES).json())</code></pre>
+  </details>
+{% endblock %}
