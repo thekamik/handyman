@@ -1,0 +1,28 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Przycisk poniżej przeprowadzi cię przez kilka przekierowań, zanim dotrzesz do celu.
+    Przeglądarka przeskakuje je w ułamku sekundy i pokazuje tylko ostatnią stronę.
+    Po drodze serwer zostawił notatkę. Znajdź ją w proxy.
+  </p>
+{% endblock %}
+
+{% block body %}
+  {% if done %}
+    <p class="message ok">Dotarłeś do celu. Flagi tu nie ma, została gdzieś po drodze.</p>
+  {% else %}
+    <p><a class="button" href="{{ url_for('.step', step=1) }}">Ruszaj</a></p>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Ile żądań wysłała przeglądarka po kliknięciu? Odpowiedzi z kodem <code>302</code> też mają treść.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    W mitmproxy filtr <code>~u /exercise6/step &amp; ~c 302</code>, potem przejrzyj zakładkę Response każdego przekierowania.
+  </details>
+{% endblock %}

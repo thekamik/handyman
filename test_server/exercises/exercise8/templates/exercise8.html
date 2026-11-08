@@ -1,0 +1,31 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Ten adres jest przeznaczony dla urządzeń IoT firmy Handyman, a nie dla przeglądarek.
+    Serwer rozpoznaje urządzenie po tym, że jego <code>User-Agent</code> zaczyna się od
+    <code>{{ device_prefix }}</code>, np. <code>{{ device_prefix }}1.0</code>.
+    Podszyj się pod urządzenie, zmieniając żądanie w proxy.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Serwer widzi twojego klienta jako: <code>{{ user_agent or "(brak)" }}</code></p>
+  {% if flag %}
+    <p class="message ok">Urządzenie rozpoznane. Flaga: {{ flag }}</p>
+  {% else %}
+    <p class="message error">Nieznane urządzenie. Dostęp tylko dla <code>{{ device_prefix }}*</code>.</p>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Przeglądarka dołącza nagłówek <code>User-Agent</code> do każdego żądania. Znajdź go w żądaniu <code>GET /exercise8/</code>.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Przechwyć żądanie (<code>i</code>, filtr <code>~u /exercise8/ &amp; ~q</code>), odśwież stronę,
+    potem <code>e</code> → <code>request-headers</code>, zmień wartość <code>User-Agent</code> na <code>{{ device_prefix }}1.0</code> i puść żądanie klawiszem <code>a</code>.
+  </details>
+{% endblock %}

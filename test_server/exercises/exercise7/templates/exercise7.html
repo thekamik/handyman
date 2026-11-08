@@ -1,0 +1,30 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Serwer sprawdza, kim jesteś, i pokazuje flagę tylko administratorowi.
+    Ale skąd właściwie wie, jaką masz rolę? Obejrzyj w proxy żądanie i odpowiedź tej strony,
+    a potem zmień żądanie tak, żeby serwer uznał cię za administratora.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Twoja rola: <strong>{{ role }}</strong></p>
+  {% if flag %}
+    <p class="message ok">Witaj, administratorze. Flaga: {{ flag }}</p>
+  {% else %}
+    <p class="message error">Brak uprawnień. Flaga jest tylko dla roli <em>admin</em>.</p>
+  {% endif %}
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Przy pierwszej wizycie odpowiedź zawiera nagłówek <code>Set-Cookie</code>. Przy kolejnych przeglądarka odsyła tę wartość w nagłówku <code>Cookie</code>.
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Przechwyć <code>GET /exercise7/</code> (<code>i</code>, filtr <code>~u /exercise7/ &amp; ~q</code>), odśwież stronę,
+    potem <code>e</code> → <code>request-headers</code>, zmień <code>role=user</code> na <code>role=admin</code> i puść żądanie klawiszem <code>a</code>.
+  </details>
+{% endblock %}

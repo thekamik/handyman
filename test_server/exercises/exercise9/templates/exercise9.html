@@ -1,0 +1,50 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Po otwarciu strona pobiera z serwera konfigurację urządzenia. Konfiguracja mówi, że urządzenie
+    jest zablokowane, więc strona ukrywa przycisk raportu diagnostycznego.
+    Tym razem nie zmieniaj żądania: przechwyć <strong>odpowiedź</strong> serwera i zmień ją, zanim dotrze do przeglądarki.
+  </p>
+{% endblock %}
+
+{% block body %}
+  <p>Urządzenie: <strong id="device">ładowanie…</strong></p>
+  <p id="locked" class="message error" hidden>Urządzenie zablokowane. Raport niedostępny.</p>
+  <p><button id="report" hidden>Pobierz raport diagnostyczny</button></p>
+  <p id="result" class="message ok" hidden></p>
+
+  <script>
+    // no-store: always ask the server, so a refreshed page goes through the proxy again
+    fetch("/exercise9/api/config", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((config) => {
+        document.getElementById("device").textContent = config.device;
+        // The only lock is this if: the browser decides what to show based on the response
+        document.getElementById(config.locked ? "locked" : "report").hidden = false;
+      });
+
+    document.getElementById("report").addEventListener("click", () => {
+      fetch("/exercise9/api/report", { method: "POST" })
+        .then((response) => response.json())
+        .then((data) => {
+          const result = document.getElementById("result");
+          result.textContent = `${data.report}. Flaga: ${data.flag}`;
+          result.hidden = false;
+        });
+    });
+  </script>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Odpowiedź na <code>GET /exercise9/api/config</code> zawiera pole <code>"locked": true</code>. Co się stanie, gdy przeglądarka dostanie <code>false</code>?
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    Filtr przechwytywania <code>~u /exercise9/api/config &amp; ~s</code> (<code>~s</code> zatrzymuje odpowiedzi, nie żądania).
+    Odśwież stronę, na zatrzymanej odpowiedzi <code>e</code> → <code>response-body</code>, zmień <code>true</code> na <code>false</code>,
+    wyjdź z edytora i puść odpowiedź klawiszem <code>a</code>.
+  </details>
+{% endblock %}
