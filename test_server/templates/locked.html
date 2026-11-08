@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Zadanie {{ number }} jest zablokowane</h1>
+  <p>Najpierw rozwiąż <a href="/exercise{{ number - 1 }}/">zadanie {{ number - 1 }}</a>.</p>
+{% endblock %}

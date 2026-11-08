@@ -3,16 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}handyman{% endblock %} · test server</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>{% block title %}handyman CTF{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   {# Shared layout: every page fills in the "title" and "content" blocks #}
   <header>
-    <img src="/static/logo.png" alt="" width="32" height="32">
+    <a class="brand" href="{{ url_for('core.index') }}">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="" width="32" height="32">
+      handyman CTF
+    </a>
     <nav>
-      <a href="/">Start</a>
-      <a href="/login">Logowanie</a>
+      <a href="{{ url_for('core.index') }}">Zadania</a>
+      <a href="{{ url_for('core.flags') }}">Flagi i postęp</a>
     </nav>
   </header>
 

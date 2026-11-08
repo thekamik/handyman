@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Flagi i postęp · handyman CTF{% endblock %}
+
+{% block content %}
+  <h1>Flagi i postęp</h1>
+
+  <form method="post" class="flag-form">
+    <input type="text" name="flag" placeholder="handyman{...}" required autofocus>
+    <button type="submit">Sprawdź</button>
+  </form>
+
+  {% if message %}
+    <p class="message {{ message[0] }}">{{ message[1] }}</p>
+  {% endif %}
+
+  {% set percent = (100 * (solved | length) / (exercises | length)) | round | int if exercises else 0 %}
+  <div class="progress"><div style="width: {{ percent }}%"></div></div>
+  <p>Rozwiązane: {{ solved | length }} / {{ exercises | length }} ({{ percent }}%)</p>
+
+  <table>
+    <tr><th>#</th><th>Zadanie</th><th>Kategoria</th><th>Rozwiązane</th></tr>
+    {% for exercise in exercises %}
+      <tr>
+        <td>{{ exercise.NUMBER }}</td>
+        <td>{{ exercise.TITLE }}</td>
+        <td>{{ exercise.CATEGORY }}</td>
+        <td>{{ solved.get(exercise.NUMBER, '—') }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  <form method="post" action="{{ url_for('core.reset') }}" onsubmit="return confirm('Wyzerować cały postęp?')">
+    <button type="submit" class="secondary">Wyzeruj postęp</button>
+  </form>
+{% endblock %}

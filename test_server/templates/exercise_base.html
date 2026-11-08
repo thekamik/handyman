@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{# Layout of every exercise page. An exercise template fills in:
+     task    what to do (always visible)
+     body    the interactive part of the page (optional)
+     hints   one <details> per hint, from vague to precise (optional) #}
+
+{% block title %}{{ number }}. {{ title }} · handyman CTF{% endblock %}
+
+{% block content %}
+  <p class="eyebrow">Zadanie {{ number }} · {{ category }}</p>
+  <h1>{{ title }}</h1>
+
+  <section class="task">
+    {% block task %}{% endblock %}
+  </section>
+
+  {% block body %}{% endblock %}
+
+  <section class="hints">
+    {% block hints %}{% endblock %}
+  </section>
+
+  <p><a href="{{ url_for('core.flags') }}">Masz flagę? Wklej ją tutaj.</a></p>
+{% endblock %}

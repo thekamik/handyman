@@ -1,0 +1,19 @@
+{% extends "exercise_base.html" %}
+
+{% block task %}
+  <p>
+    Ta strona została wysłana razem z flagą, ale przeglądarka jej nie pokazuje.
+    Otwórz w proxy odpowiedź, w której przyszła ta strona, i obejrzyj ją dokładnie.
+  </p>
+{% endblock %}
+
+{% block hints %}
+  <details>
+    <summary>Podpowiedź 1</summary>
+    Odpowiedź HTTP to nie tylko treść strony. Co jest przed nią?
+  </details>
+  <details>
+    <summary>Podpowiedź 2</summary>
+    W mitmproxy: <code>Enter</code> na wiadomości <code>GET /exercise1/</code>, potem <code>Tab</code> na zakładkę Response i przejrzyj nagłówki.
+  </details>
+{% endblock %}

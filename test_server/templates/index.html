@@ -1,18 +1,30 @@
 {% extends "base.html" %}
 
-{% block title %}Start{% endblock %}
-
 {% block content %}
-  <h1>Serwer testowy</h1>
+  <h1>Ćwiczenia z mitmproxy</h1>
   <p>
-    Ta strona jest celem do ćwiczeń z proxy. Każde kliknięcie to żądanie HTTP,
-    które można podejrzeć w mitmproxy.
+    Każde zadanie ukrywa flagę w formacie <code>handyman{...}</code>. Na samej stronie jej nie zobaczysz:
+    znajdziesz ją tylko w ruchu, który przechodzi przez proxy. Zadania są ułożone od najłatwiejszego.
+  </p>
+  <p class="cta">
+    <a class="button" href="{{ url_for('core.flags') }}">Wklej flagę i sprawdź postęp</a>
+    <span>Rozwiązane: {{ solved | length }} / {{ exercises | length }}</span>
   </p>
 
-  <h2>Co można przetestować</h2>
-  <ul>
-    <li><a href="/login">Formularz logowania</a>: dane z formularza wysyłane metodą POST</li>
-    <li><a href="/static/style.css">Plik CSS</a>: zwykły plik statyczny (GET)</li>
-    <li><a href="/docs">/docs</a>: automatyczna dokumentacja API z FastAPI</li>
-  </ul>
+  <ol class="exercises">
+    {% for exercise in exercises %}
+      {% set done = exercise.NUMBER in solved %}
+      {% set open = exercise.NUMBER == 1 or (exercise.NUMBER - 1) in solved %}
+      <li class="{{ 'done' if done else ('open' if open else 'locked') }}">
+        <span class="num">{{ exercise.NUMBER }}</span>
+        {% if done or open %}
+          <a href="/exercise{{ exercise.NUMBER }}/">{{ exercise.TITLE }}</a>
+        {% else %}
+          <span>{{ exercise.TITLE }}</span>
+        {% endif %}
+        <span class="category">{{ exercise.CATEGORY }}</span>
+        <span class="status">{{ '✓' if done else ('' if open else '🔒') }}</span>
+      </li>
+    {% endfor %}
+  </ol>
 {% endblock %}

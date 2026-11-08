@@ -8,3 +8,6 @@ __pycache__/
 
 # Recorded traffic (may contain passwords and cookies)
 *.mitm
+
+# Flask instance folder: secret key for flags and progress database
+instance/
