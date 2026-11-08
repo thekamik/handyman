@@ -5,3 +5,6 @@
 # Python bytecode cache
 __pycache__/
 *.pyc
+
+# Recorded traffic (may contain passwords and cookies)
+*.mitm
